@@ -14,15 +14,18 @@ from openprocurement.api.constants import (
     INN_SCHEME,
     GMDN_CPV_PREFIXES,
 )
-from openprocurement.api.utils import get_now, is_ua_road_classification, is_gmdn_classification, to_decimal  # move
 from openprocurement.api.utils import (
+    get_now,
+    is_ua_road_classification,
+    is_gmdn_classification,
+    to_decimal,
     update_logging_context,
     error_handler,
     raise_operation_error,
     check_document_batch,
-)  # XXX tender context
+)
 from openprocurement.tender.core.constants import AMOUNT_NET_COEF, FIRST_STAGE_PROCUREMENT_TYPES
-from openprocurement.tender.core.utils import calculate_business_date, has_requested_fields_changes
+from openprocurement.tender.core.utils import calculate_tender_business_date, has_requested_fields_changes
 from schematics.exceptions import ValidationError
 
 
@@ -380,7 +383,7 @@ def validate_tender_status_update_not_in_pre_qualificaton(request):
 def validate_tender_period_extension(request):
     extra_period = request.content_configurator.tendering_period_extra
     tender = request.validated["tender"]
-    if calculate_business_date(get_now(), extra_period, tender) > tender.tenderPeriod.endDate:
+    if calculate_tender_business_date(get_now(), extra_period, tender) > tender.tenderPeriod.endDate:
         raise_operation_error(request, "tenderPeriod should be extended by {0.days} days".format(extra_period))
 
 

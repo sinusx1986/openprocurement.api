@@ -1346,6 +1346,9 @@ def lost_contract_for_active_award(self):
     self.assertEqual(response.json["data"]["status"], "complete")
 
 
+# TenderUAResourceTest
+
+
 def tender_with_main_procurement_category(self):
     data = dict(**self.initial_data)
 
