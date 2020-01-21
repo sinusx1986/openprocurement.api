@@ -36,6 +36,7 @@ build:
     - branches
   variables:
     WERF_TAG_GIT_COMMIT: ci-$CI_COMMIT_REF_SLUG-$CI_COMMIT_SHORT_SHA
+  when: manual
 
 build_master:
   extends: .build
@@ -170,6 +171,7 @@ stop_review:
       --tx=popen//id=sand//env:DB_NAME=test_sandbox//env:SANDBOX_MODE=1//env:SINGLE_APP=1
       --tx=popen//id=prod//env:DB_NAME=test_prod//env:SANDBOX_MODE=//env:SINGLE_APP=1
   coverage: '/TOTAL\s+\d+\s+\d+\s+(\d+%)/'
+  when: manual
 
 test_relocation_api:
   extends: .test
