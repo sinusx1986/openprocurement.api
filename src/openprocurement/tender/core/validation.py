@@ -256,6 +256,37 @@ def validate_award_data(request):
     return validate_data(request, model)
 
 
+def validate_award_milestone_data(request):
+    update_logging_context(request, {"milestone_id": "__new__"})
+    model = type(request.tender).awards.model_class.milestones.model_class
+    return validate_data(request, model)
+
+
+def validate_qualification_milestone_data(request):
+    update_logging_context(request, {"milestone_id": "__new__"})
+    model = type(request.tender).qualifications.model_class.milestones.model_class
+    return validate_data(request, model)
+
+
+def _validate_item_milestone_24hours(request, item_name):
+    milestone = request.validated["milestone"]
+    item_class = getattr(type(request.tender), "{}s".format(item_name))
+    model = item_class.model_class.milestones.model_class
+    if milestone.code != model.CODE_24_HOURS:
+        raise_operation_error(
+            request,
+            "The only allowed milestone code is '{}'".format(model.CODE_24_HOURS)
+        )
+
+
+def validate_award_milestone_24hours(request):
+    return _validate_item_milestone_24hours(request, item_name="award")
+
+
+def validate_qualification_milestone_24hours(request):
+    return _validate_item_milestone_24hours(request, item_name="qualification")
+
+
 def validate_patch_award_data(request):
     model = type(request.tender).awards.model_class
     return validate_data(request, model, True)
@@ -823,6 +854,15 @@ def validate_bid_operation_not_in_tendering(request):
         )
 
 
+def validate_bid_document_not_in_tendering(request):
+    if request.validated["tender_status"] != "active.tendering":
+        operation = OPERATIONS.get(request.method)
+        raise_operation_error(
+            request,
+            "Can't {} document in current ({}) tender status".format(operation, request.validated["tender_status"])
+        )
+
+
 def validate_bid_operation_period(request):
     tender = request.validated["tender"]
     if (
@@ -905,6 +945,54 @@ def validate_bid_document_operation_with_not_pending_award(request):
 
 
 # for openua, openeu
+def unless_allowed_by_qualification_milestone(validation):
+    """
+    decorator for 24hours and anomaly low price features to skip some view validator functions
+    :param validation: a function runs unless it's disabled by an active qualification milestone
+    :return:
+    """
+    def decorated_validation(request):
+        tender = request.validated["tender"]
+        bid_id = request.validated["bid"]["id"]
+        if "qualifications" in tender:
+            qualifications = [q for q in tender["qualifications"]
+                              if q["status"] == "pending" and q["bidID"] == bid_id]
+        else:
+            qualifications = [q for q in tender.get("awards", "")
+                              if q["status"] == "pending" and q["bid_id"] == bid_id]
+        now = get_now()
+        if qualifications and any(
+                milestone["code"] in ("24h",) and milestone["date"] < now < milestone["dueDate"]
+                for q in qualifications
+                for milestone in q.get("milestones", "")
+        ):
+            return  # skipping the validation
+        # else
+        return validation(request)
+
+    return decorated_validation
+
+
+def validate_update_status_before_milestone_due_date(request):
+    from openprocurement.tender.core.models import QualificationMilestone
+    context = request.context
+    sent_status = request.json_body.get("data", {}).get("status")
+    if context.status == "pending" and context.status != sent_status:
+        now = get_now()
+        for milestone in context.milestones:
+            if (
+                milestone.code == QualificationMilestone.CODE_24_HOURS
+                and milestone["date"] < now < milestone["dueDate"]
+            ):
+                raise_operation_error(
+                    request,
+                    "Can't change status to '{}' until milestone.dueDate: {}".format(
+                        sent_status,
+                        milestone["dueDate"].isoformat()
+                    ),
+                )
+
+
 def validate_bid_document_operation_in_not_allowed_status(request):
     if request.validated["tender_status"] not in ["active.tendering", "active.qualification", "active.awarded"]:
         raise_operation_error(

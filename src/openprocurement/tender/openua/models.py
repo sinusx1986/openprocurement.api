@@ -47,6 +47,7 @@ from openprocurement.tender.core.models import (
     EnquiryPeriod,
     ConfidentialDocument,
     Document,
+    QualificationMilestoneListMixin,
 )
 from openprocurement.tender.core.utils import (
     rounding_shouldStartAfter,
@@ -482,7 +483,7 @@ class Cancellation(BaseCancellation):
     complaints = ListType(ModelType(CancellationComplaint), default=list())
 
 
-class Award(BaseAward):
+class Award(BaseAward, QualificationMilestoneListMixin):
     class Options:
         roles = {
             "edit": whitelist(

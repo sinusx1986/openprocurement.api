@@ -6,7 +6,7 @@ from datetime import timedelta
 
 from openprocurement.api.utils import get_now
 from openprocurement.tender.belowthreshold.tests.base import test_organization, now
-
+from openprocurement.tender.core.models import QualificationMilestone
 from openprocurement.tender.openua.tests.base import test_bids
 
 
@@ -1138,7 +1138,7 @@ def create_tender_bidder_document(self):
     self.assertEqual(response.content_type, "application/json")
     self.assertEqual(
         response.json["errors"][0]["description"],
-        "Can't add document because award of bid is not in pending or active state",
+        "Can't add document in current (active.awarded) tender status",
     )
 
 
@@ -1244,7 +1244,7 @@ def put_tender_bidder_document(self):
     self.assertEqual(response.content_type, "application/json")
     self.assertEqual(
         response.json["errors"][0]["description"],
-        "Can't update document because award of bid is not in pending or active state",
+        "Can't update document in current (active.awarded) tender status",
     )
 
 
@@ -1311,7 +1311,7 @@ def patch_tender_bidder_document(self):
     self.assertEqual(response.content_type, "application/json")
     self.assertEqual(
         response.json["errors"][0]["description"],
-        "Can't update document because award of bid is not in pending or active state",
+        "Can't update document in current (active.awarded) tender status",
     )
 
 
@@ -1351,7 +1351,7 @@ def create_tender_bidder_document_nopending(self):
     self.assertEqual(response.content_type, "application/json")
     self.assertEqual(
         response.json["errors"][0]["description"],
-        "Can't update document because award of bid is not in pending or active state",
+        "Can't update document in current (active.qualification) tender status",
     )
 
     response = self.app.put(
@@ -1364,7 +1364,7 @@ def create_tender_bidder_document_nopending(self):
     self.assertEqual(response.content_type, "application/json")
     self.assertEqual(
         response.json["errors"][0]["description"],
-        "Can't update document because award of bid is not in pending or active state",
+        "Can't update document in current (active.qualification) tender status",
     )
 
     response = self.app.post(
@@ -1376,7 +1376,7 @@ def create_tender_bidder_document_nopending(self):
     self.assertEqual(response.content_type, "application/json")
     self.assertEqual(
         response.json["errors"][0]["description"],
-        "Can't add document because award of bid is not in pending or active state",
+        "Can't add document in current (active.qualification) tender status",
     )
 
 
@@ -1510,7 +1510,7 @@ def create_tender_bidder_document_json(self):
     self.assertEqual(response.content_type, "application/json")
     self.assertEqual(
         response.json["errors"][0]["description"],
-        "Can't add document because award of bid is not in pending or active state",
+        "Can't add document in current (active.awarded) tender status",
     )
 
     response = self.app.get("/tenders/{}/bids/{}/documents/{}".format(self.tender_id, self.bid_id, doc_id))
@@ -1628,7 +1628,7 @@ def put_tender_bidder_document_json(self):
     self.assertEqual(response.content_type, "application/json")
     self.assertEqual(
         response.json["errors"][0]["description"],
-        "Can't update document because award of bid is not in pending or active state",
+        "Can't update document in current (active.awarded) tender status",
     )
 
 
@@ -1693,14 +1693,10 @@ def tender_bidder_confidential_document(self):
     # switch to active.qualification
     tender = self.db.get(self.tender_id)
     tender["status"] = "active.qualification"
-    tender["awards"] = [
-        {
-            "id": "0" * 32,
-            "bid_id": self.bid_id,
-            "status": "pending",
-        }
-    ]
     self.db.save(tender)
+
+    # allow document upload
+    self.append_24hours_milestone(self.bid_id)
 
     # get list as tender owner
     response = self.app.get(
