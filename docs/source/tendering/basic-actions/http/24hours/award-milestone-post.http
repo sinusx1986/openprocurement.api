@@ -1,0 +1,26 @@
+POST /api/2.5/tenders/413b4fbdac6149b29633b0c1a2ed456f/awards/104d84f26b0845ffaf36867b56647613/milestones?acc_token=17a715db021543ff980ef8b5ea8dd40c HTTP/1.0
+Authorization: Bearer broker
+Content-Length: 100
+Content-Type: application/json
+Host: lb-api-sandbox.prozorro.gov.ua
+DATA:
+{
+  "data": {
+    "code": "24h", 
+    "description": "One ring to bring them all and in the darkness bind them"
+  }
+}
+
+Response: 201 Created
+Content-Type: application/json; charset=UTF-8
+Location: http://lb-api-sandbox.prozorro.gov.ua/api/2.5/tenders/413b4fbdac6149b29633b0c1a2ed456f/awards/104d84f26b0845ffaf36867b56647613/milestones/f16ab6b0deff4580b6e6ed3835d996f1
+{
+  "data": {
+    "date": "2020-05-02T05:00:00+03:00", 
+    "dueDate": "2020-05-03T05:00:00+03:00", 
+    "code": "24h", 
+    "description": "One ring to bring them all and in the darkness bind them", 
+    "id": "f16ab6b0deff4580b6e6ed3835d996f1"
+  }
+}
+
